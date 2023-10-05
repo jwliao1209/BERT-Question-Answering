@@ -1,2 +1,9 @@
-data/*
+cache/
 src/__pycache__/*
+data/*
+prediction/
+multiple_choice/output1/*
+question_answering/output1/*
+question_answering/pred1/*
+mc_pred_test.json
+submission.csv

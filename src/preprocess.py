@@ -21,6 +21,7 @@ def process_qa_data(data: dict, context: List[str], answer: bool = False) -> dic
     data_qa["id"] = data.get("id", 0)
     data_qa["title"] = data.get("id", 0)
     data_qa["context"] = context[data.get("relevant", None)]
+    data_qa["question"] = data.get("question", None)
 
     if answer:
         data_qa["answers"] = {

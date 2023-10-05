@@ -688,5 +688,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # print("0000")
     main()
