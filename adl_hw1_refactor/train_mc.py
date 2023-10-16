@@ -1,0 +1,111 @@
+import math
+import torch
+
+from argparse import Namespace, ArgumentParser
+from functools import partial
+from datasets import load_dataset
+from torch.utils.data import DataLoader
+from transformers import AutoTokenizer, default_data_collator
+from transformers import AutoConfig, AutoModelForMultipleChoice
+from transformers import get_scheduler
+
+from src.constants import MC_DATA_FILE
+from src.preprocess import preprocess_mc_func
+from src.optimizer import get_optimizer
+from src.trainer import MCTrainer
+
+
+def parse_arguments() -> Namespace:
+    parser = ArgumentParser(description="Mutiple Choice")
+
+    parser.add_argument("--tokenizer_name", type=str,
+                        default="bert-base-chinese",
+                        help="tokenizer name")
+    parser.add_argument("--model_name_or_path", type=str,
+                        default="hfl/chinese-bert-wwm-ext",
+                        help="model name or path")
+    parser.add_argument("--batch_size", type=int,
+                        default=8,
+                        help="batch size")
+    parser.add_argument("--accum_grad_step", type=int,
+                        default=8,
+                        help="accumulation gradient steps")
+    parser.add_argument("--epoch", type=int,
+                        default=10,
+                        help="number of epochs")
+    parser.add_argument("--lr", type=float,
+                        default=3e-5,
+                        help="learning rate")
+    parser.add_argument("--weight_decay", type=float,
+                        default=0,
+                        help="weight decay")
+    parser.add_argument("--lr_scheduler", type=str,
+                        default="cosine",
+                        help="learning rate scheduler")
+    parser.add_argument("--warm_up_step", type=int,
+                        default=0,
+                        help="number of warm up steps")
+    
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+
+    # Prepared datasets
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.tokenizer_name,
+        use_fast=True,
+        trust_remote_code=False,
+    )
+    datasets = load_dataset("json", data_files=MC_DATA_FILE)
+    preprocess_func = partial(preprocess_mc_func, tokenizer=tokenizer)
+    processed_datasets = datasets.map(
+        preprocess_func,
+        batched=True,
+        remove_columns=datasets["train"].column_names
+    )
+    train_loader = DataLoader(
+        processed_datasets["train"],
+        batch_size=args.batch_size,
+        collate_fn=default_data_collator,
+        shuffle=True,
+    )
+    valid_loader = DataLoader(
+        processed_datasets["valid"],
+        batch_size=args.batch_size,
+        collate_fn=default_data_collator,
+        shuffle=False,
+    )
+
+    # Prepared model
+    device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
+    model_config = AutoConfig.from_pretrained(args.model_name_or_path)
+    model = AutoModelForMultipleChoice.from_pretrained(
+        args.model_name_or_path,
+        config=model_config,
+    ).to(device)
+
+    # Prepared optimizer and learning rate scheduler
+    optimizer = get_optimizer(
+        model, lr=args.lr, weight_decay=args.weight_decay
+    )
+    num_update_steps_per_epoch = math.ceil(len(train_loader) / args.accum_grad_step)
+    max_train_steps = args.epoch * num_update_steps_per_epoch
+    lr_scheduler = get_scheduler(
+        name=args.lr_scheduler,
+        optimizer=optimizer,
+        num_warmup_steps=args.warm_up_step * args.accum_grad_step,
+        num_training_steps=max_train_steps * args.accum_grad_step,
+    )
+
+    trainer = MCTrainer(
+        model=model,
+        device=device,
+        train_loader=train_loader,
+        valid_loader=valid_loader,
+        optimizer=optimizer,
+        accum_grad_step=args.accum_grad_step,
+        lr_scheduler=lr_scheduler,
+    )
+    trainer.fit(epoch=args.epoch)
