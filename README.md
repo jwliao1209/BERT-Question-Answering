@@ -7,16 +7,10 @@ pip install -r configs/requirements.txt
 
 ## Download dataset and pretrain weight
 ```
-bash scripts/00_download.sh 
-```
-
-## Preprocessing
-```
-bash scripts/01_run_preprocessing.sh
+bash scripts/download.sh 
 ```
 
 ## Training
 ```
-bash scripts/02_run_train_mc.sh
+bash scripts/train.sh
 ```
-

@@ -1,5 +1,6 @@
 import math
 import torch
+import wandb
 
 from argparse import Namespace, ArgumentParser
 from functools import partial
@@ -22,10 +23,10 @@ def parse_arguments() -> Namespace:
                         default="bert-base-chinese",
                         help="tokenizer name")
     parser.add_argument("--model_name_or_path", type=str,
-                        default="hfl/chinese-roberta-wwm-ext",
+                        default="hfl/chinese-roberta-wwm-ext-large",
                         help="model name or path")
     parser.add_argument("--batch_size", type=int,
-                        default=8,
+                        default=10,
                         help="batch size")
     parser.add_argument("--accum_grad_step", type=int,
                         default=8,
@@ -106,6 +107,23 @@ if __name__ == "__main__":
         num_warmup_steps=args.warm_up_step * args.accum_grad_step,
         num_training_steps=max_train_steps * args.accum_grad_step,
     )
+    # Prepared logger
+    wandb.init(
+        project="adl_hw1", 
+        name="experiment_qa", 
+        config={
+            "tokenizer": args.tokenizer_name,
+            "model": args.model_name_or_path,
+            "epochs": args.epoch,
+            "batch_size": args.batch_size,
+            "accum_grad_step": args.accum_grad_step,
+            "optimizer": "adamw",
+            "lr_scheduler": args.lr_scheduler,
+            "learning_rate": args.lr,
+            "weight_decay": args.weight_decay,
+            "num_warmup_steps": args.warm_up_step,
+        }
+    )
 
     trainer = QATrainer(
         model=model,
@@ -117,5 +135,7 @@ if __name__ == "__main__":
         optimizer=optimizer,
         accum_grad_step=args.accum_grad_step,
         lr_scheduler=lr_scheduler,
+        logger=wandb,
     )
     trainer.fit(epoch=args.epoch)
+    wandb.finish()

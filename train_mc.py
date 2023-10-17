@@ -1,5 +1,6 @@
 import math
 import torch
+import wandb
 
 from argparse import Namespace, ArgumentParser
 from functools import partial
@@ -99,6 +100,24 @@ if __name__ == "__main__":
         num_training_steps=max_train_steps * args.accum_grad_step,
     )
 
+    # Prepared logger
+    wandb.init(
+        project="adl_hw1", 
+        name="experiment_mc", 
+        config={
+            "tokenizer": args.tokenizer_name,
+            "model": args.model_name_or_path,
+            "epochs": args.epoch,
+            "batch_size": args.batch_size,
+            "accum_grad_step": args.accum_grad_step,
+            "optimizer": "adamw",
+            "lr_scheduler": args.lr_scheduler,
+            "learning_rate": args.lr,
+            "weight_decay": args.weight_decay,
+            "num_warmup_steps": args.warm_up_step,
+        }
+    )
+
     trainer = MCTrainer(
         model=model,
         device=device,
@@ -107,5 +126,7 @@ if __name__ == "__main__":
         optimizer=optimizer,
         accum_grad_step=args.accum_grad_step,
         lr_scheduler=lr_scheduler,
+        logger=wandb,
     )
     trainer.fit(epoch=args.epoch)
+    wandb.finish()

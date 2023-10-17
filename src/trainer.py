@@ -2,12 +2,13 @@ import os
 import torch
 from tqdm import tqdm
 from src.constants import CHECKPOINT_DIR, QA_MAX_SEQ_LEN
+from src.tracker import MetricTracker
 from src.metrics import get_correct_num, get_qa_evalation
 from src.postprocess import post_processing_func
 from src.utils import dict_to_device, create_and_fill_np_array
 
 
-class Trainer:
+class BaseTrainer:
     def __init__(
         self,
         model,
@@ -17,6 +18,7 @@ class Trainer:
         optimizer,
         accum_grad_step,
         lr_scheduler,
+        logger=None,
         *arg,
         **kwarg,
         ):
@@ -30,23 +32,31 @@ class Trainer:
         self.optimizer = optimizer
         self.accum_grad_step = accum_grad_step
         self.lr_scheduler = lr_scheduler
+        self.tracker = MetricTracker()
+        self.logger = logger
 
     def train_step(self, batch_data, step):
         NotImplementedError
 
     def valid_step(self, batch_data, step):
         NotImplementedError
+    
+    def log(self, record):
+        # self.progress_bar.set_postfix(record)
+        if self.logger is not None:
+            self.logger.log(record)
+        return
 
     def train_one_epoch(self):
         self.model.train()
-        train_bar = tqdm(self.train_loader, desc=f"Training {self.cur_ep}")
-        total_loss = 0
-        total_num = 0
-        total_correct_number = 0
+        self.progress_bar = tqdm(self.train_loader, desc=f"Training {self.cur_ep}")
+        self.tracker.reset(keys=["train/loss", "train/acc"])
 
-        for step, batch_data in enumerate(train_bar, start=1):
+        for step, batch_data in enumerate(self.progress_bar, start=1):
             batch_data = dict_to_device(batch_data, self.device)
-            loss, data_num, correct_number = self.train_step(batch_data, step)
+            loss = self.train_step(batch_data, step)
+            self.progress_bar.set_postfix(self.tracker.result())
+            self.log(self.tracker.result())
 
             (loss / self.accum_grad_step).backward()
             if step % self.accum_grad_step == 0:
@@ -54,32 +64,27 @@ class Trainer:
                 self.optimizer.zero_grad()
                 self.lr_scheduler.step()
 
-            total_loss += loss.item()
-            total_num += data_num
-            total_correct_number += correct_number.item()
-            train_bar.set_postfix({"loss": total_loss / total_num, "acc": total_correct_number / total_num})
-        train_bar.close()
+        self.progress_bar.close()
         return
 
     @torch.no_grad()
     def valid_one_epoch(self):
         self.model.eval()
-        valid_bar = tqdm(self.valid_loader, desc=f"Validation {self.cur_ep}")
-        total_loss = 0
-        total_num = 0
-        total_correct_number = 0
+        self.progress_bar = tqdm(self.valid_loader, desc=f"Validation {self.cur_ep}")
+        self.tracker.reset(keys=["valid/loss", "valid/acc"])
 
-        for step, batch_data in enumerate(valid_bar, start=1):
+        for step, batch_data in enumerate(self.progress_bar, start=1):
             batch_data = dict_to_device(batch_data, self.device)
-            loss, data_num, correct_number = self.valid_step(batch_data, step)
-            total_loss += loss
-            total_num += data_num
-            total_correct_number += correct_number
-            valid_bar.set_postfix({"loss": total_loss / total_num, "acc": total_correct_number / total_num})
-        valid_bar.close()
-
+            self.valid_step(batch_data, step)
+            self.progress_bar.set_postfix(self.tracker.result())
+        
+        self.log({"epoch": self.cur_ep, **self.tracker.result()})
+        self.progress_bar.close()
         self.model.save_pretrained(
-            os.path.join(CHECKPOINT_DIR, f"mc_epoch={self.cur_ep}_acc={total_correct_number / total_num:.4f}")
+            os.path.join(
+                CHECKPOINT_DIR,
+                f"mc_epoch={self.cur_ep}_acc={self.tracker.result().get('valid/acc', 0):.4f}"
+            )
         )
         return
 
@@ -91,7 +96,7 @@ class Trainer:
         return
 
 
-class MCTrainer(Trainer):
+class MCTrainer(BaseTrainer):
     def __init__(
         self,
         model,
@@ -101,6 +106,7 @@ class MCTrainer(Trainer):
         optimizer,
         accum_grad_step,
         lr_scheduler,
+        logger=None,
         *arg,
         **kwarg,
         ):
@@ -112,24 +118,29 @@ class MCTrainer(Trainer):
             optimizer,
             accum_grad_step,
             lr_scheduler,
+            logger,
         )
 
-    def train_step(self, batch_data, index):
+    def share_step(self, batch_data, index, prefix):
         outputs = self.model(**batch_data)
         loss = outputs.loss
         preds = outputs.logits.argmax(dim=-1)
-        correct_number = get_correct_num(preds, batch_data["labels"])
-        return loss, preds.shape[0], correct_number
+        correct_num = get_correct_num(preds, batch_data["labels"])
+        n = preds.shape[0]
+
+        self.tracker.update(f"{prefix}/loss", loss / n, n)
+        self.tracker.update(f"{prefix}/acc", correct_num / n, n)
+
+        return loss
+
+    def train_step(self, batch_data, index):
+        return self.share_step(batch_data, index, "train")
 
     def valid_step(self, batch_data, index):
-        outputs = self.model(**batch_data)
-        loss = outputs.loss
-        preds = outputs.logits.argmax(dim=-1)
-        correct_number = get_correct_num(preds, batch_data["labels"])
-        return loss.item(), preds.shape[0], correct_number.item()
+        return self.share_step(batch_data, index, "valid")
 
 
-class QATrainer(Trainer):
+class QATrainer(BaseTrainer):
     def __init__(
         self,
         model,
@@ -141,6 +152,7 @@ class QATrainer(Trainer):
         optimizer,
         accum_grad_step,
         lr_scheduler,
+        logger=None,
         *arg,
         **kwarg,
         ):
@@ -152,6 +164,7 @@ class QATrainer(Trainer):
             optimizer,
             accum_grad_step,
             lr_scheduler,
+            logger,
         )
         self.valid_dataset = valid_dataset
         self.processed_valid_dataset = processed_valid_dataset
@@ -159,32 +172,48 @@ class QATrainer(Trainer):
     def train_step(self, batch_data, index):
         outputs = self.model(**batch_data)
         loss = outputs.loss
-        (loss / self.accum_grad_step).backward()
-
-        if index % self.accum_grad_step == 0:
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            self.lr_scheduler.step()
-
-        return loss.item(), outputs.start_logits.shape[0], 
+        n = outputs.start_logits.shape[0]
+        self.tracker.update(f"train/loss", loss / n, n)
+        return loss
 
     def valid_step(self, batch_data, index):
         outputs = self.model(**batch_data)
-        start_logits = outputs.start_logits.cpu().numpy()
-        end_logits = outputs.end_logits.cpu().numpy()
+        start_logits = outputs.start_logits.detach().cpu().numpy()
+        end_logits = outputs.end_logits.detach().cpu().numpy()
         return start_logits, end_logits
+    
+    def train_one_epoch(self):
+        self.model.train()
+        self.progress_bar = tqdm(self.train_loader, desc=f"Training {self.cur_ep}")
+        self.tracker.reset(keys=["train/loss"])
 
-    def valid_on_epoch(self):
+        for step, batch_data in enumerate(self.progress_bar, start=1):
+            batch_data = dict_to_device(batch_data, self.device)
+            loss = self.train_step(batch_data, step)
+            self.progress_bar.set_postfix(self.tracker.result())
+            self.log(self.tracker.result())
+
+            (loss / self.accum_grad_step).backward()
+            if step % self.accum_grad_step == 0:
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+                self.lr_scheduler.step()
+
+        self.progress_bar.close()
+        return
+
+    def valid_one_epoch(self):
         self.model.eval()
         start_logits_list, end_logits_list = [], []
+        self.progress_bar = tqdm(self.valid_loader, desc=f"Validation {self.cur_ep}")
+        # self.tracker.reset(keys=["valid/loss"])
 
-        valid_bar = tqdm(self.valid_loader, desc=f"Validation {self.cur_ep}")
-        for step, batch_data in enumerate(valid_bar, start=1):
+        for step, batch_data in enumerate(self.progress_bar, start=1):
             batch_data = dict_to_device(batch_data, self.device)
             start_logits, end_logits = self.valid_step(batch_data, step)
             start_logits_list.append(start_logits)
             end_logits_list.append(end_logits)
-        valid_bar.close()
+        self.progress_bar.close()
 
         start_logits_concat = create_and_fill_np_array(start_logits_list, self.processed_valid_dataset, QA_MAX_SEQ_LEN)
         end_logits_concat = create_and_fill_np_array(end_logits_list, self.processed_valid_dataset, QA_MAX_SEQ_LEN)
@@ -198,7 +227,12 @@ class QATrainer(Trainer):
             predictions=prediction.predictions,
             references=prediction.label_ids
         )
+
+        self.log({"epoch": self.cur_ep, **eval_metric})
         self.model.save_pretrained(
-            os.path.join(CHECKPOINT_DIR, f"qa_epoch={self.cur_ep}_acc={eval_metric['exact_match']:.4f}")
+            os.path.join(
+                CHECKPOINT_DIR,
+                f"qa_epoch={self.cur_ep}_acc={eval_metric['exact_match']:.4f}"
+            )
         )
         return
