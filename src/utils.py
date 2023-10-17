@@ -47,6 +47,18 @@ def process_qa_data(data: dict, context: List[str], answer: bool = False) -> dic
     return data_qa
 
 
+def set_random_seeds(seed=0):
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    return
+
+
 def dict_to_device(data: dict, device: torch.device) -> dict:
     return {k: v.to(device) for k, v in data.items()}
 

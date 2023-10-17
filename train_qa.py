@@ -14,6 +14,7 @@ from src.constants import QA_DATA_FILE
 from src.preprocess import preprocess_train_qa_func, preprocess_valid_qa_func
 from src.optimizer import get_optimizer
 from src.trainer import QATrainer
+from src.utils import set_random_seeds
 
 
 def parse_arguments() -> Namespace:
@@ -44,7 +45,7 @@ def parse_arguments() -> Namespace:
                         default="cosine",
                         help="learning rate scheduler")
     parser.add_argument("--warm_up_step", type=int,
-                        default=0,
+                        default=300,
                         help="number of warm up steps")
     parser.add_argument("--device_id", type=int,
                         default=0,
@@ -54,6 +55,7 @@ def parse_arguments() -> Namespace:
 
 
 if __name__ == "__main__":
+    set_random_seeds()
     args = parse_arguments()
 
     # Prepared datasets
