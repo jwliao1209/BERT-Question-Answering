@@ -46,7 +46,10 @@ def parse_arguments() -> Namespace:
     parser.add_argument("--warm_up_step", type=int,
                         default=0,
                         help="number of warm up steps")
-    
+    parser.add_argument("--device_id", type=int,
+                        default=0,
+                        help="deivce id")
+
     return parser.parse_args()
 
 
@@ -80,7 +83,7 @@ if __name__ == "__main__":
     )
 
     # Prepared model
-    device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device(f"cuda:{args.device_id}" if torch.cuda.is_available() else "cpu")
     model_config = AutoConfig.from_pretrained(args.model_name_or_path)
     model = AutoModelForMultipleChoice.from_pretrained(
         args.model_name_or_path,
