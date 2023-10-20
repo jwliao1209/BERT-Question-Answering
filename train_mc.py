@@ -39,7 +39,7 @@ def parse_arguments() -> Namespace:
                         default=3e-5,
                         help="learning rate")
     parser.add_argument("--weight_decay", type=float,
-                        default=0,
+                        default=1e-5,
                         help="weight decay")
     parser.add_argument("--lr_scheduler", type=str,
                         default="linear",
@@ -89,6 +89,7 @@ if __name__ == "__main__":
     model_config = AutoConfig.from_pretrained(args.model_name_or_path)
     model = AutoModelForMultipleChoice.from_pretrained(
         args.model_name_or_path,
+        trust_remote_code=False,
         config=model_config,
     ).to(device)
 
@@ -107,7 +108,8 @@ if __name__ == "__main__":
 
     # Prepared logger
     wandb.init(
-        project="adl_hw1", 
+        project="adl_hw1",
+        group="mc",
         name="experiment_mc", 
         config={
             "tokenizer": args.tokenizer_name,
@@ -122,6 +124,7 @@ if __name__ == "__main__":
             "num_warmup_steps": args.warm_up_step,
         }
     )
+    wandb.watch(model, log="all")
 
     trainer = MCTrainer(
         model=model,

@@ -40,7 +40,7 @@ class BaseTrainer:
 
     def valid_step(self, batch_data, step):
         NotImplementedError
-    
+
     def log(self, record):
         # self.progress_bar.set_postfix(record)
         if self.logger is not None:
@@ -55,8 +55,8 @@ class BaseTrainer:
         for step, batch_data in enumerate(self.progress_bar, start=1):
             batch_data = dict_to_device(batch_data, self.device)
             loss = self.train_step(batch_data, step)
-            self.progress_bar.set_postfix(self.tracker.result())
-            self.log(self.tracker.result())
+            self.progress_bar.set_postfix({**self.tracker.result(), "lr": self.lr_scheduler.get_last_lr()[0]})
+            self.log({**self.tracker.result(), "lr": self.lr_scheduler.get_last_lr()[0]})
 
             (loss / self.accum_grad_step).backward()
             if step % self.accum_grad_step == 0:
@@ -190,8 +190,8 @@ class QATrainer(BaseTrainer):
         for step, batch_data in enumerate(self.progress_bar, start=1):
             batch_data = dict_to_device(batch_data, self.device)
             loss = self.train_step(batch_data, step)
-            self.progress_bar.set_postfix(self.tracker.result())
-            self.log(self.tracker.result())
+            self.progress_bar.set_postfix({**self.tracker.result(), "lr": self.lr_scheduler.get_last_lr()[0]})
+            self.log({**self.tracker.result(), "lr": self.lr_scheduler.get_last_lr()[0]})
 
             (loss / self.accum_grad_step).backward()
             if step % self.accum_grad_step == 0:

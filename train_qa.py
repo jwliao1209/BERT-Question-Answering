@@ -62,7 +62,6 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(
         args.tokenizer_name,
         use_fast=True,
-        trust_remote_code=False,
     )
     datasets = load_dataset("json", data_files=QA_DATA_FILE)
 
