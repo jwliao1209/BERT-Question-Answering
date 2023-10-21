@@ -3,8 +3,14 @@ cache/
 src/__pycache__/*
 old_version
 checkpoint
+checkpoint_0
 data
 prediction
 wandb
 temp
 data.zip
+Untitled.ipynb
+prediction_0.7974
+prediction_0.8056
+prediction_old
+prediction_old1

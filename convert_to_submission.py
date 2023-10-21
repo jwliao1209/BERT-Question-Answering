@@ -7,10 +7,10 @@ def parse_arguments() -> Namespace:
     parser = ArgumentParser(description='Generate Submission')
 
     parser.add_argument('--prediction_path', type=str,
-                        default="prediction/test_qa_pred/eval_predictions.json",
+                        default="pred/test_qa_pred/eval_predictions.json",
                         help='prediction path')
     parser.add_argument('--output_path', type=str,
-                        default="prediction/submission.csv",
+                        default="pred/prediction.csv",
                         help='output path')
     return parser.parse_args()
 

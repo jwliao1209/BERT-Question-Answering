@@ -36,13 +36,13 @@ def parse_arguments() -> Namespace:
                         default=10,
                         help="number of epochs")
     parser.add_argument("--lr", type=float,
-                        default=3e-5,
+                        default=2e-5,
                         help="learning rate")
     parser.add_argument("--weight_decay", type=float,
-                        default=0,
+                        default=1e-5,
                         help="weight decay")
     parser.add_argument("--lr_scheduler", type=str,
-                        default="cosine",
+                        default="linear",
                         help="learning rate scheduler")
     parser.add_argument("--warm_up_step", type=int,
                         default=300,
@@ -108,12 +108,13 @@ if __name__ == "__main__":
     lr_scheduler = get_scheduler(
         name=args.lr_scheduler,
         optimizer=optimizer,
-        num_warmup_steps=args.warm_up_step * args.accum_grad_step,
-        num_training_steps=max_train_steps * args.accum_grad_step,
+        num_warmup_steps=math.ceil(args.warm_up_step / args.accum_grad_step),
+        num_training_steps=max_train_steps,
     )
     # Prepared logger
     wandb.init(
-        project="adl_hw1", 
+        project="adl_hw1",
+        group="qa",
         name="experiment_qa", 
         config={
             "tokenizer": args.tokenizer_name,
@@ -128,6 +129,7 @@ if __name__ == "__main__":
             "num_warmup_steps": args.warm_up_step,
         }
     )
+    wandb.watch(model, log="all")
 
     trainer = QATrainer(
         model=model,

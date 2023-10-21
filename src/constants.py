@@ -3,7 +3,7 @@ import os
 
 DATA_DIR = "data"
 CHECKPOINT_DIR = "checkpoint"
-PREDICTION_DIR = "prediction"
+PREDICTION_DIR = "pred"
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(PREDICTION_DIR, exist_ok=True)
 

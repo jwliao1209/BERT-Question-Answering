@@ -30,13 +30,13 @@ def parse_arguments() -> Namespace:
                         default=8,
                         help="batch size")
     parser.add_argument("--accum_grad_step", type=int,
-                        default=4,
+                        default=10,
                         help="accumulation gradient steps")
     parser.add_argument("--epoch", type=int,
                         default=10,
                         help="number of epochs")
     parser.add_argument("--lr", type=float,
-                        default=3e-5,
+                        default=2e-5,
                         help="learning rate")
     parser.add_argument("--weight_decay", type=float,
                         default=1e-5,
@@ -45,7 +45,7 @@ def parse_arguments() -> Namespace:
                         default="linear",
                         help="learning rate scheduler")
     parser.add_argument("--warm_up_step", type=int,
-                        default=100,
+                        default=300,
                         help="number of warm up steps")
     parser.add_argument("--device_id", type=int,
                         default=0,
@@ -87,11 +87,15 @@ if __name__ == "__main__":
     # Prepared model
     device = torch.device(f"cuda:{args.device_id}" if torch.cuda.is_available() else "cpu")
     model_config = AutoConfig.from_pretrained(args.model_name_or_path)
-    model = AutoModelForMultipleChoice.from_pretrained(
-        args.model_name_or_path,
-        trust_remote_code=False,
-        config=model_config,
-    ).to(device)
+    
+    if args.model_name_or_path is not None:
+        model = AutoModelForMultipleChoice.from_pretrained(
+            args.model_name_or_path,
+            trust_remote_code=False,
+            config=model_config,
+        ).to(device)
+    # else:
+    #     model = AutoModelForMultipleChoice.from_config(model_config).to(device)
 
     # Prepared optimizer and learning rate scheduler
     optimizer = get_optimizer(
@@ -102,8 +106,8 @@ if __name__ == "__main__":
     lr_scheduler = get_scheduler(
         name=args.lr_scheduler,
         optimizer=optimizer,
-        num_warmup_steps=args.warm_up_step * args.accum_grad_step,
-        num_training_steps=max_train_steps * args.accum_grad_step,
+        num_warmup_steps=math.ceil(args.warm_up_step / args.accum_grad_step),
+        num_training_steps=max_train_steps,
     )
 
     # Prepared logger
