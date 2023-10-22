@@ -18,7 +18,7 @@ from src.utils import set_random_seeds
 
 
 def parse_arguments() -> Namespace:
-    parser = ArgumentParser(description="Mutiple Choice")
+    parser = ArgumentParser(description="Multiple Choice")
 
     parser.add_argument("--tokenizer_name", type=str,
                         default="bert-base-chinese",
