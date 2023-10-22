@@ -16,6 +16,12 @@ bash ./run.sh data/context.json data/test.json pred/prediction.csv
 ```
 
 ## Training
+### Multiple Choice
 ```
-bash scripts/train.sh
+bash scripts/train_mc.sh
+```
+
+### Question Answering
+```
+bash scripts/train_qa.sh
 ```
