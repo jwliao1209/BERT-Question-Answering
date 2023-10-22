@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ ! -f data ]; then
+    unzip data.zip
+fi
+
+if [ ! -f best_checkpoints ]; then
+    unzip best_checkpoints.zip
+fi
+
 python convert_to_dataset.py \
        --inference \
        --preprocess mc \

@@ -4,6 +4,7 @@ src/__pycache__/*
 old_version
 checkpoint
 checkpoint_0
+checkpoint_1
 data
 prediction
 wandb

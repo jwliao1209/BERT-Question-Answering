@@ -50,6 +50,8 @@ def parse_arguments() -> Namespace:
     parser.add_argument("--device_id", type=int,
                         default=0,
                         help="deivce id")
+    parser.add_argument("--train_from_scratch", action="store_true",
+                        help="Option of train from scratch")
 
     return parser.parse_args()
 
@@ -88,14 +90,14 @@ if __name__ == "__main__":
     device = torch.device(f"cuda:{args.device_id}" if torch.cuda.is_available() else "cpu")
     model_config = AutoConfig.from_pretrained(args.model_name_or_path)
     
-    if args.model_name_or_path is not None:
+    if args.train_from_scratch:
+        model = AutoModelForMultipleChoice.from_config(model_config).to(device)
+    else:
         model = AutoModelForMultipleChoice.from_pretrained(
             args.model_name_or_path,
             trust_remote_code=False,
             config=model_config,
         ).to(device)
-    # else:
-    #     model = AutoModelForMultipleChoice.from_config(model_config).to(device)
 
     # Prepared optimizer and learning rate scheduler
     optimizer = get_optimizer(
