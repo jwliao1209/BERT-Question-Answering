@@ -67,6 +67,10 @@ bash scripts/train_qa.sh
 We implemented the code on an environment running Ubuntu 22.04.1, utilizing a 12th Generation Intel(R) Core(TM) i7-12700 CPU, along with a single NVIDIA GeForce RTX 4090 GPU equipped with 24 GB of dedicated memory.
 
 
+## Acknowledgement
+We thank the Hugging Face repository: https://github.com/huggingface/transformers
+
+
 ## Citation
 ```bibtex
 @misc{

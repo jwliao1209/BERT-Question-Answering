@@ -4,6 +4,7 @@ from transformers import AutoTokenizer
 from src.constants import MC_CONTEXT_NAME, MC_QUESTION_HEADER_NAME, MC_ENDING_LEN, MC_ENDING_NAMES, MC_LAB_COL_NAME, MC_MAX_SEQ_LEN
 from src.constants import QA_MAX_SEQ_LEN, QA_QUESTION_COL_NAME, QA_CONTEXT_COL_NAME, QA_ANS_COL_NAME
 
+
 def flatten_list(input_list: list) -> list:
     return list(chain(*input_list))
 
@@ -16,6 +17,9 @@ def unflatten_list(input_list: list, sub_list_num) -> list:
 
 
 def preprocess_mc_func(data: dict, tokenizer: AutoTokenizer, train=True) -> dict:
+    """
+    Reference: https://github.com/huggingface/transformers/blob/main/examples/pytorch/multiple-choice/run_swag_no_trainer.py
+    """
     first_sentences = [[context] * MC_ENDING_LEN for context in data[MC_CONTEXT_NAME]]
     question_headers = data[MC_QUESTION_HEADER_NAME]
     second_sentences = [
@@ -39,6 +43,9 @@ def preprocess_mc_func(data: dict, tokenizer: AutoTokenizer, train=True) -> dict
 
 
 def preprocess_train_qa_func(data: dict, tokenizer: AutoTokenizer) -> dict:
+    """
+    Reference: https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-answering/run_qa_no_trainer.py
+    """
     pad_on_right = tokenizer.padding_side == "right"
     data[QA_QUESTION_COL_NAME] = [q.lstrip() for q in data[QA_QUESTION_COL_NAME]]
 
@@ -109,6 +116,9 @@ def preprocess_train_qa_func(data: dict, tokenizer: AutoTokenizer) -> dict:
 
 
 def preprocess_valid_qa_func(data: dict, tokenizer: AutoTokenizer) -> dict:
+    """
+    Reference: https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-answering/run_qa_no_trainer.py
+    """
     pad_on_right = tokenizer.padding_side == "right"
     data[QA_QUESTION_COL_NAME] = [q.lstrip() for q in data[QA_QUESTION_COL_NAME]]
 

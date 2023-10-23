@@ -21,6 +21,7 @@ def postprocess_qa_predictions(
     prefix: Optional[str] = None,
 ):
     """
+    Reference: https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-answering/run_qa_no_trainer.py
     Post-processes the predictions of a question-answering model to convert them to answers that are substrings of the
     original contexts. This is the base postprocessing functions for models that only return start and end logits.
 
@@ -232,6 +233,9 @@ def post_processing_func(
     null_score_diff_threshold=0,
     output_dir="temp",
     ):
+        """
+        Reference: https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-answering/run_qa_no_trainer.py
+        """
         os.makedirs(output_dir, exist_ok=True)
         # Post-processing: we match the start logits and end logits to answers in the original context.
         predictions = postprocess_qa_predictions(
