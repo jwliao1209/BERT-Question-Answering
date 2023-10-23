@@ -24,11 +24,13 @@ bash ./run.sh data/context.json data/test.json pred/prediction.csv
 
 ## Training
 ### Multiple Choice
+To train the multiple choice model, you can run the commad:
 ```
 bash scripts/train_mc.sh
 ```
 
 ### Question Answering
+To train the question answering model, you can run the commad:
 ```
 bash scripts/train_qa.sh
 ```
