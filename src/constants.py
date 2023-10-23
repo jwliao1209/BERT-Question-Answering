@@ -4,6 +4,7 @@ import os
 DATA_DIR = "data"
 CHECKPOINT_DIR = "checkpoint"
 PREDICTION_DIR = "pred"
+os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(PREDICTION_DIR, exist_ok=True)
 
