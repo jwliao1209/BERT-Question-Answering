@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ ! -f data ]; then
+if [ ! -d data ]; then
     unzip data.zip
 fi
 
-if [ ! -f best_checkpoints ]; then
+if [ ! -d best_checkpoints ]; then
     unzip best_checkpoints.zip
 fi
 

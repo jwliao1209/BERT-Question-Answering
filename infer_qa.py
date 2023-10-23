@@ -25,7 +25,7 @@ def parse_arguments() -> Namespace:
                         default="checkpoint/qa_epoch=9_acc=83.6823",
                         help="checkpoint folder")
     parser.add_argument("--mc_prediction_path", type=str,
-                        default="prediction/test_mc_pred.json",
+                        default="pred/test_mc_pred.json",
                         help="path of mutiple choice predictions")
     return parser.parse_args()
 

@@ -23,6 +23,9 @@ def parse_arguments() -> Namespace:
     parser.add_argument("--checkpoint_folder", type=str,
                         default="checkpoint/mutiple_choice_epoch=5_acc=0.9674",
                         help="checkpoint folder")
+    parser.add_argument("--test_mc", type=str,
+                        default=None,
+                        help="path of test mc file")
     return parser.parse_args()
 
 
@@ -35,7 +38,8 @@ if __name__ == "__main__":
         use_fast=True,
         trust_remote_code=False,
     )
-    datasets = load_dataset("json", data_files={"test": os.path.join(DATA_DIR, MC_TEST_FILE)})
+    test_mc_file = args.test_mc if args.test_mc is not None else os.path.join(DATA_DIR, MC_TEST_FILE)
+    datasets = load_dataset("json", data_files={"test": test_mc_file})
     preprocess_func = partial(preprocess_mc_func, tokenizer=tokenizer, train=False)
     processed_test_dataset = datasets["test"].map(
         preprocess_func,
