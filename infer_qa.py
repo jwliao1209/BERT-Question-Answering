@@ -48,7 +48,7 @@ if __name__ == "__main__":
     )
     test_loader = DataLoader(
         processed_test_dataset.remove_columns(["example_id", "offset_mapping"]),
-        batch_size=2,
+        batch_size=1,
         collate_fn=default_data_collator,
         shuffle=False,
     )
