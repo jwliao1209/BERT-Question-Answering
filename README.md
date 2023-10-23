@@ -2,13 +2,6 @@
 This repository is implementation of Homework 1 for CSIE5431 Applied Deep Learning course in 2023 Fall semester at National Taiwan University.
 
 
-## Geting the Code
-You can download the files in this repository by cloning this repository:
-```
-git clone https://github.com/jwliao1209/Question-Answering.git
-```
-
-
 ## Setting the Environment
 To set the environment, you can run this command:
 ```
