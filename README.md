@@ -1,4 +1,4 @@
-# Question-Answering
+# BERT Question Answering
 This repository is implementation of Homework 1 for CSIE5431 Applied Deep Learning course in 2023 Fall semester at National Taiwan University.
 
 
@@ -76,7 +76,7 @@ We thank the Hugging Face repository: https://github.com/huggingface/transformer
 ## Citation
 ```bibtex
 @misc{
-    title  = {2023_adl_hw1_question_answering},
+    title  = {BERT Question Answering},
     author = {Jia-Wei Liao},
     url    = {https://github.com/jwliao1209/Question-Answering},
     year   = {2023}
