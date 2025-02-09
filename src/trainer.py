@@ -36,10 +36,10 @@ class BaseTrainer:
         self.logger = logger
 
     def train_step(self, batch_data, step):
-        NotImplementedError
+        raise NotImplementedError
 
     def valid_step(self, batch_data, step):
-        NotImplementedError
+        raise NotImplementedError
 
     def log(self, record):
         # self.progress_bar.set_postfix(record)
